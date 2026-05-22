@@ -1,0 +1,142 @@
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+
+body {
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  background: #111;
+  color: #d0d0d0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+#canvas-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+#main-canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+/* ── Palette sidebar ───────────────────────────────────────────────────── */
+
+#palette {
+  width: 176px;
+  min-width: 176px;
+  background: #1a1a2a;
+  border-right: 1px solid #2a2a40;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+#palette h2 {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #666;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #2a2a40;
+}
+
+/* ── Tile buttons ──────────────────────────────────────────────────────── */
+
+#tile-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tile-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #c0c0c0;
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-align: left;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.tile-btn:hover {
+  background: #252538;
+  color: #fff;
+}
+
+.tile-btn.active {
+  background: #252538;
+  border-color: #5a7fff;
+  color: #fff;
+}
+
+.tile-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ── Tool buttons ──────────────────────────────────────────────────────── */
+
+#tools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#tools button {
+  padding: 7px 9px;
+  border: 1px solid #3a3a50;
+  border-radius: 5px;
+  background: #252538;
+  color: #c0c0c0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+
+#tools button:hover {
+  background: #303048;
+  color: #fff;
+}
+
+/* ── Keyboard hint footer ──────────────────────────────────────────────── */
+
+#hints {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: #444;
+  line-height: 1.5;
+}
