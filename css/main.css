@@ -62,6 +62,37 @@ hr {
   border-top: 1px solid #2a2a40;
 }
 
+/* ── Tool mode buttons (Paint / Fill) ──────────────────────────────────── */
+
+#tool-modes {
+  display: flex;
+  gap: 4px;
+}
+
+.tool-mode-btn {
+  flex: 1;
+  padding: 7px 6px;
+  border: 1px solid #3a3a50;
+  border-radius: 5px;
+  background: #252538;
+  color: #c0c0c0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-align: center;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.tool-mode-btn:hover {
+  background: #303048;
+  color: #fff;
+}
+
+.tool-mode-btn.active {
+  background: #303048;
+  border-color: #5a7fff;
+  color: #fff;
+}
+
 /* ── Tile buttons ──────────────────────────────────────────────────────── */
 
 #tile-buttons {
@@ -104,7 +135,7 @@ hr {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* ── Tool buttons ──────────────────────────────────────────────────────── */
+/* ── Action buttons (Clear / Export / Import) ──────────────────────────── */
 
 #tools {
   display: flex;

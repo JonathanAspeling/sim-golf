@@ -9,21 +9,33 @@
 <body>
   <div id="app">
     <aside id="palette">
+
+      <h2>Mode</h2>
+      <div id="tool-modes">
+        <button class="tool-mode-btn" data-tool="paint">Paint</button>
+        <button class="tool-mode-btn" data-tool="fill">Fill</button>
+      </div>
+
+      <hr>
+
       <h2>Tiles</h2>
       <div id="tile-buttons"></div>
 
       <hr>
 
-      <h2>Tools</h2>
+      <h2>Actions</h2>
       <div id="tools">
-        <button id="btn-clear" title="Reset the entire map to Out-of-Bounds">Clear map</button>
-        <button id="btn-export" title="Download the course as course.json">Export JSON</button>
+        <button id="btn-clear">Clear map</button>
+        <button id="btn-export">Export JSON</button>
+        <button id="btn-import">Import JSON</button>
       </div>
 
       <div id="hints">
-        <p>Left drag &mdash; paint</p>
-        <p>Right / middle drag &mdash; pan</p>
+        <p>Left drag &mdash; paint / fill</p>
+        <p>Right drag &mdash; erase</p>
+        <p>Middle drag &mdash; pan</p>
         <p>Scroll &mdash; zoom</p>
+        <p>Ctrl+Z / Ctrl+Y &mdash; undo / redo</p>
       </div>
     </aside>
 
@@ -31,6 +43,9 @@
       <canvas id="main-canvas"></canvas>
     </main>
   </div>
+
+  <!-- Hidden file input for JSON import -->
+  <input type="file" id="file-import" accept=".json" style="display:none">
 
   <script type="module" src="js/main.js"></script>
 </body>
