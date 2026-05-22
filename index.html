@@ -14,6 +14,24 @@
       <div id="tool-modes">
         <button class="tool-mode-btn" data-tool="paint">Paint</button>
         <button class="tool-mode-btn" data-tool="fill">Fill</button>
+        <button class="tool-mode-btn" data-tool="tee">Tee</button>
+        <button class="tool-mode-btn" data-tool="flag">Flag</button>
+      </div>
+
+      <hr>
+
+      <h2>Hole Info</h2>
+      <div id="hole-info">
+        <input type="text" id="hole-name" placeholder="Hole name" maxlength="40"
+               autocomplete="off" spellcheck="false">
+        <div id="par-row">
+          <span class="field-label">Par</span>
+          <div id="par-select">
+            <button class="par-btn" data-par="3">3</button>
+            <button class="par-btn" data-par="4">4</button>
+            <button class="par-btn" data-par="5">5</button>
+          </div>
+        </div>
       </div>
 
       <hr>
@@ -31,7 +49,7 @@
       </div>
 
       <div id="hints">
-        <p>Left drag &mdash; paint / fill</p>
+        <p>Left click &mdash; paint / fill / place</p>
         <p>Right drag &mdash; erase</p>
         <p>Middle drag &mdash; pan</p>
         <p>Scroll &mdash; zoom</p>
@@ -44,9 +62,7 @@
     </main>
   </div>
 
-  <!-- Hidden file input for JSON import -->
   <input type="file" id="file-import" accept=".json" style="display:none">
-
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

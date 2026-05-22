@@ -4,21 +4,21 @@
  * Tools:
  *   paint — left drag paints the active tile; right drag erases (Out of Bounds)
  *   fill  — left click flood-fills contiguous same-type tiles
+ *   tee   — left click places the tee marker; moving it is just clicking again
+ *   flag  — left click places the hole/flag marker
  *
  * Camera:
  *   Middle-click drag  → pan
  *   Scroll wheel       → zoom
  *
  * History:
- *   An entire paint stroke or flood fill is committed as one undoable entry.
- *   The `before` value for each tile is captured the first time it is touched
- *   in a stroke, so undo always restores the pre-stroke state correctly even
- *   if the same tile is painted multiple times within one drag.
+ *   Entire paint strokes and flood fills are committed as one undoable step.
+ *   Marker placement is not tracked in history (single-click, easily re-placed).
  */
 
 import { TILES } from './tilemap.js';
 
-export const TOOL = { PAINT: 'paint', FILL: 'fill' };
+export const TOOL = { PAINT: 'paint', FILL: 'fill', TEE: 'tee', FLAG: 'flag' };
 
 export class Editor {
   /**
@@ -27,20 +27,21 @@ export class Editor {
    * @param {import('./tilemap.js').TileMap}       tilemap
    * @param {import('./renderer.js').Renderer}     renderer
    * @param {import('./history.js').History}       history
+   * @param {import('./hole.js').HoleInfo}         hole
    */
-  constructor(canvas, camera, tilemap, renderer, history) {
+  constructor(canvas, camera, tilemap, renderer, history, hole) {
     this.canvas   = canvas;
     this.camera   = camera;
     this.tilemap  = tilemap;
     this.renderer = renderer;
     this.history  = history;
+    this.hole     = hole;
 
     this.activeTileId = TILES.FAIRWAY.id;
     this.activeTool   = TOOL.PAINT;
 
-    // Stroke state — lives for the duration of a single mouse-button hold.
     this._strokeTileId  = null;
-    this._strokeChanges = null; // Map<"col,row", {col,row,before,after}> | null
+    this._strokeChanges = null; // Map<"col,row", change> | null
 
     this._panning   = false;
     this._lastMouse = { x: 0, y: 0 };
@@ -88,10 +89,8 @@ export class Editor {
     const after  = this._strokeTileId;
 
     if (!this._strokeChanges.has(key)) {
-      // First visit to this tile in the stroke — snapshot the pre-stroke value.
       this._strokeChanges.set(key, { col, row, before, after });
     } else {
-      // Revisited — just update the intended final value.
       this._strokeChanges.get(key).after = after;
     }
 
@@ -101,7 +100,7 @@ export class Editor {
   _commitStroke() {
     if (!this._strokeChanges) return;
     const changes = [...this._strokeChanges.values()]
-      .filter(c => c.before !== c.after); // skip tiles that ended up unchanged
+      .filter(c => c.before !== c.after);
     this.history.push(changes);
     this._strokeChanges = null;
     this._strokeTileId  = null;
@@ -111,10 +110,9 @@ export class Editor {
 
   _floodFill(startCol, startRow, newTileId) {
     const targetId = this.tilemap.get(startCol, startRow);
-    if (targetId === newTileId) return; // painting over same type — nothing to do
+    if (targetId === newTileId) return;
 
     const { cols, rows } = this.tilemap;
-    // Uint8Array is faster than a Set for visited flags on a bounded grid.
     const seen    = new Uint8Array(cols * rows);
     const changes = [];
     const stack   = [[startCol, startRow]];
@@ -122,19 +120,25 @@ export class Editor {
     while (stack.length > 0) {
       const [c, r] = stack.pop();
       if (c < 0 || c >= cols || r < 0 || r >= rows) continue;
-
       const idx = r * cols + c;
       if (seen[idx]) continue;
       if (this.tilemap.get(c, r) !== targetId) continue;
-
       seen[idx] = 1;
       changes.push({ col: c, row: r, before: targetId, after: newTileId });
       this.tilemap.set(c, r, newTileId);
-
       stack.push([c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]);
     }
 
     if (changes.length > 0) this.history.push(changes);
+  }
+
+  // ── Marker placement ───────────────────────────────────────────────────────
+
+  _placeMarker(sx, sy) {
+    const { col, row } = this._screenToTile(sx, sy);
+    if (!this.tilemap.isInBounds(col, row)) return;
+    if (this.activeTool === TOOL.TEE)  this.hole.teePos  = { col, row };
+    if (this.activeTool === TOOL.FLAG) this.hole.holePos = { col, row };
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -143,7 +147,9 @@ export class Editor {
     this._lastMouse = { x: e.offsetX, y: e.offsetY };
 
     if (e.button === 0) {
-      if (this.activeTool === TOOL.FILL) {
+      if (this.activeTool === TOOL.TEE || this.activeTool === TOOL.FLAG) {
+        this._placeMarker(e.offsetX, e.offsetY);
+      } else if (this.activeTool === TOOL.FILL) {
         const { col, row } = this._screenToTile(e.offsetX, e.offsetY);
         this._floodFill(col, row, this.activeTileId);
       } else {

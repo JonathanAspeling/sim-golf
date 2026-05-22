@@ -62,16 +62,16 @@ hr {
   border-top: 1px solid #2a2a40;
 }
 
-/* ── Tool mode buttons (Paint / Fill) ──────────────────────────────────── */
+/* ── Tool mode buttons (2×2 grid) ──────────────────────────────────────── */
 
 #tool-modes {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
 }
 
 .tool-mode-btn {
-  flex: 1;
-  padding: 7px 6px;
+  padding: 7px 4px;
   border: 1px solid #3a3a50;
   border-radius: 5px;
   background: #252538;
@@ -92,6 +92,62 @@ hr {
   border-color: #5a7fff;
   color: #fff;
 }
+
+/* ── Hole info section ─────────────────────────────────────────────────── */
+
+#hole-info {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+#hole-name {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #3a3a50;
+  border-radius: 5px;
+  background: #252538;
+  color: #d0d0d0;
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 0.1s;
+}
+
+#hole-name::placeholder { color: #555; }
+#hole-name:focus        { border-color: #5a7fff; }
+
+#par-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.field-label {
+  font-size: 0.75rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+#par-select {
+  display: flex;
+  gap: 3px;
+}
+
+.par-btn {
+  width: 30px;
+  height: 26px;
+  border: 1px solid #3a3a50;
+  border-radius: 4px;
+  background: #252538;
+  color: #c0c0c0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-align: center;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.par-btn:hover  { background: #303048; color: #fff; }
+.par-btn.active { background: #303048; border-color: #5a7fff; color: #fff; }
 
 /* ── Tile buttons ──────────────────────────────────────────────────────── */
 
@@ -116,16 +172,8 @@ hr {
   transition: background 0.1s, border-color 0.1s, color 0.1s;
 }
 
-.tile-btn:hover {
-  background: #252538;
-  color: #fff;
-}
-
-.tile-btn.active {
-  background: #252538;
-  border-color: #5a7fff;
-  color: #fff;
-}
+.tile-btn:hover  { background: #252538; color: #fff; }
+.tile-btn.active { background: #252538; border-color: #5a7fff; color: #fff; }
 
 .tile-swatch {
   width: 16px;
@@ -135,7 +183,7 @@ hr {
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* ── Action buttons (Clear / Export / Import) ──────────────────────────── */
+/* ── Action buttons ────────────────────────────────────────────────────── */
 
 #tools {
   display: flex;
@@ -155,10 +203,7 @@ hr {
   transition: background 0.1s, color 0.1s;
 }
 
-#tools button:hover {
-  background: #303048;
-  color: #fff;
-}
+#tools button:hover { background: #303048; color: #fff; }
 
 /* ── Keyboard hint footer ──────────────────────────────────────────────── */
 
