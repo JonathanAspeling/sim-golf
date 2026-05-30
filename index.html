@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SimGolf — Course Editor</title>
+  <title>SimGolf</title>
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
   <div id="app">
+
+    <!-- ── Edit mode sidebar ─────────────────────────────────────────────── -->
     <aside id="palette">
 
       <h2>Mode</h2>
@@ -50,16 +52,69 @@
 
       <div id="hints">
         <p>Left click &mdash; paint / fill / place</p>
-        <p>Right drag &mdash; erase</p>
+        <p>Shift + left drag &mdash; erase</p>
+        <p>Right drag &mdash; orbit camera</p>
         <p>Middle drag &mdash; pan</p>
+        <p>WASD / arrows &mdash; pan camera</p>
         <p>Scroll &mdash; zoom</p>
         <p>Ctrl+Z / Ctrl+Y &mdash; undo / redo</p>
       </div>
     </aside>
 
-    <main id="canvas-container">
-      <canvas id="main-canvas"></canvas>
-    </main>
+    <!-- ── Play mode sidebar ─────────────────────────────────────────────── -->
+    <aside id="play-panel">
+
+      <div id="play-header">
+        <div id="play-hole-name">—</div>
+        <div id="play-par-display">Par —</div>
+      </div>
+
+      <div id="play-strokes-section">
+        <div id="stroke-count-display">0</div>
+        <div class="play-label">Strokes</div>
+      </div>
+
+      <div id="play-result">
+        <div id="result-score-text"></div>
+        <div id="result-label-text"></div>
+        <button id="btn-play-again">Play Again</button>
+      </div>
+
+      <div id="club-section">
+        <div class="play-label">Club</div>
+        <div id="club-selector">
+          <button class="club-btn" data-club="driver">Driver</button>
+          <button class="club-btn" data-club="iron">Iron</button>
+          <button class="club-btn" data-club="wedge">Wedge</button>
+          <button class="club-btn" data-club="putter">Putter</button>
+        </div>
+      </div>
+
+      <div class="play-spacer"></div>
+
+      <button id="btn-edit-mode">Back to Edit</button>
+
+      <div id="play-hints">
+        <p>Click the ball to aim</p>
+        <p>Drag to set power &amp; direction</p>
+        <p>Release to shoot</p>
+        <p>1 / 2 / 3 / 4 &mdash; select club</p>
+        <p>Right drag &mdash; orbit camera</p>
+        <p>Middle drag &mdash; pan</p>
+        <p>WASD / arrows &mdash; pan camera</p>
+        <p>Scroll &mdash; zoom</p>
+      </div>
+    </aside>
+
+    <!-- ── 3D viewport ────────────────────────────────────────────────────── -->
+    <div id="right-pane">
+      <div id="top-bar">
+        <span id="top-bar-title">SimGolf &mdash; Course Editor</span>
+        <button id="btn-play-mode">Play</button>
+      </div>
+      <main id="viewport"></main>
+    </div>
+
   </div>
 
   <input type="file" id="file-import" accept=".json" style="display:none">

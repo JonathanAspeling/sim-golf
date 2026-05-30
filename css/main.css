@@ -17,38 +17,98 @@ body {
   overflow: hidden;
 }
 
-/* ── Layout ────────────────────────────────────────────────────────────── */
+/* ── Top-level layout ──────────────────────────────────────────────────── */
 
 #app {
   display: flex;
   height: 100vh;
 }
 
-#canvas-container {
+/* Right pane: top bar + canvas, stacked vertically. */
+#right-pane {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  position: relative;
 }
 
-#main-canvas {
-  display: block;
+#viewport {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
   cursor: crosshair;
 }
 
-/* ── Palette sidebar ───────────────────────────────────────────────────── */
+#viewport canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
-#palette {
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+
+#top-bar {
+  flex-shrink: 0;
+  height: 40px;
+  background: #141422;
+  border-bottom: 1px solid #2a2a40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+}
+
+#top-bar-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+  letter-spacing: 0.04em;
+}
+
+#btn-play-mode {
+  padding: 5px 18px;
+  border: 1px solid #4a6aee;
+  border-radius: 5px;
+  background: #1e2d7a;
+  color: #8ab0ff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+#btn-play-mode:hover  { background: #2a3d9a; color: #b0c8ff; }
+
+/* Green tint when already in play mode (button reads "Edit"). */
+#btn-play-mode.playing {
+  background: #1a4a2e;
+  border-color: #3aaf5a;
+  color: #7adfa0;
+}
+#btn-play-mode.playing:hover { background: #245a38; color: #9af0b8; }
+
+/* ── Shared sidebar base ───────────────────────────────────────────────── */
+
+#palette,
+#play-panel {
   width: 176px;
   min-width: 176px;
   background: #1a1a2a;
   border-right: 1px solid #2a2a40;
-  padding: 14px 10px;
-  display: flex;
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+  padding: 14px 10px;
 }
 
+/* Edit sidebar visible by default; play sidebar toggled by JS. */
+#palette    { display: flex; }
+#play-panel { display: none; }
+
+/* The hidden attribute is respected; these rules apply when visible. */
 #palette h2 {
   font-size: 0.7rem;
   font-weight: 600;
@@ -82,24 +142,12 @@ hr {
   transition: background 0.1s, border-color 0.1s, color 0.1s;
 }
 
-.tool-mode-btn:hover {
-  background: #303048;
-  color: #fff;
-}
+.tool-mode-btn:hover  { background: #303048; color: #fff; }
+.tool-mode-btn.active { background: #303048; border-color: #5a7fff; color: #fff; }
 
-.tool-mode-btn.active {
-  background: #303048;
-  border-color: #5a7fff;
-  color: #fff;
-}
+/* ── Hole info (edit mode) ─────────────────────────────────────────────── */
 
-/* ── Hole info section ─────────────────────────────────────────────────── */
-
-#hole-info {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
+#hole-info { display: flex; flex-direction: column; gap: 7px; }
 
 #hole-name {
   width: 100%;
@@ -112,32 +160,137 @@ hr {
   outline: none;
   transition: border-color 0.1s;
 }
-
 #hole-name::placeholder { color: #555; }
 #hole-name:focus        { border-color: #5a7fff; }
 
-#par-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
+#par-row { display: flex; align-items: center; gap: 7px; }
 
-.field-label {
-  font-size: 0.75rem;
-  color: #888;
-  flex-shrink: 0;
-}
+.field-label { font-size: 0.75rem; color: #888; flex-shrink: 0; }
 
-#par-select {
-  display: flex;
-  gap: 3px;
-}
+#par-select { display: flex; gap: 3px; }
 
 .par-btn {
-  width: 30px;
-  height: 26px;
+  width: 30px; height: 26px;
+  border: 1px solid #3a3a50; border-radius: 4px;
+  background: #252538; color: #c0c0c0;
+  cursor: pointer; font-size: 0.8rem; text-align: center;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.par-btn:hover  { background: #303048; color: #fff; }
+.par-btn.active { background: #303048; border-color: #5a7fff; color: #fff; }
+
+/* ── Tile buttons ──────────────────────────────────────────────────────── */
+
+#tile-buttons { display: flex; flex-direction: column; gap: 3px; }
+
+.tile-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid transparent; border-radius: 5px;
+  background: transparent; color: #c0c0c0;
+  cursor: pointer; font-size: 0.82rem; text-align: left;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.tile-btn:hover  { background: #252538; color: #fff; }
+.tile-btn.active { background: #252538; border-color: #5a7fff; color: #fff; }
+
+.tile-swatch {
+  width: 16px; height: 16px;
+  border-radius: 3px; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ── Action buttons ────────────────────────────────────────────────────── */
+
+#tools { display: flex; flex-direction: column; gap: 4px; }
+
+#tools button {
+  padding: 7px 9px;
+  border: 1px solid #3a3a50; border-radius: 5px;
+  background: #252538; color: #c0c0c0;
+  cursor: pointer; font-size: 0.8rem; text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+#tools button:hover { background: #303048; color: #fff; }
+
+/* ── Hint footers ──────────────────────────────────────────────────────── */
+
+#hints, #play-hints {
+  margin-top: auto;
+  display: flex; flex-direction: column;
+  gap: 3px;
+  font-size: 0.7rem; color: #444; line-height: 1.5;
+}
+
+/* ── Play panel content ────────────────────────────────────────────────── */
+
+#play-header { display: flex; flex-direction: column; gap: 4px; }
+
+#play-hole-name {
+  font-size: 0.88rem; font-weight: 600;
+  color: #e0e0e0; line-height: 1.35;
+}
+
+#play-par-display { font-size: 0.75rem; color: #888; }
+
+#play-strokes-section {
+  text-align: center;
+  padding: 14px 0;
+  border: 1px solid #2a2a40;
+  border-radius: 8px;
+}
+
+#stroke-count-display {
+  font-size: 2.8rem; font-weight: 700;
+  color: #fff; line-height: 1;
+}
+
+.play-label {
+  font-size: 0.68rem;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: #555; margin-top: 5px;
+}
+
+/* Result card — hidden until hole-out. */
+#play-result {
+  display: none;
+  flex-direction: column; gap: 6px;
+  background: #252538;
   border: 1px solid #3a3a50;
-  border-radius: 4px;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+}
+#play-result.visible { display: flex; }
+
+#result-score-text { font-size: 1.25rem; font-weight: 700; color: #fff; }
+
+#result-label-text { font-size: 0.95rem; font-weight: 700; }
+
+#btn-play-again {
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px solid #3a3a50; border-radius: 5px;
+  background: #1a1a2a; color: #c0c0c0;
+  cursor: pointer; font-size: 0.78rem;
+  transition: background 0.1s, color 0.1s;
+}
+#btn-play-again:hover { background: #303048; color: #fff; }
+
+/* ── Club selector ──────────────────────────────────────────────────────── */
+
+#club-section { display: flex; flex-direction: column; gap: 5px; }
+
+#club-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.club-btn {
+  padding: 7px 4px;
+  border: 1px solid #3a3a50;
+  border-radius: 5px;
   background: #252538;
   color: #c0c0c0;
   cursor: pointer;
@@ -145,74 +298,16 @@ hr {
   text-align: center;
   transition: background 0.1s, border-color 0.1s, color 0.1s;
 }
+.club-btn:hover  { background: #303048; color: #fff; }
+.club-btn.active { background: #303048; border-color: #5a7fff; color: #fff; }
 
-.par-btn:hover  { background: #303048; color: #fff; }
-.par-btn.active { background: #303048; border-color: #5a7fff; color: #fff; }
+.play-spacer { flex: 1; }
 
-/* ── Tile buttons ──────────────────────────────────────────────────────── */
-
-#tile-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.tile-btn {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 9px;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  background: transparent;
-  color: #c0c0c0;
-  cursor: pointer;
-  font-size: 0.82rem;
-  text-align: left;
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
-}
-
-.tile-btn:hover  { background: #252538; color: #fff; }
-.tile-btn.active { background: #252538; border-color: #5a7fff; color: #fff; }
-
-.tile-swatch {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* ── Action buttons ────────────────────────────────────────────────────── */
-
-#tools {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-#tools button {
-  padding: 7px 9px;
-  border: 1px solid #3a3a50;
-  border-radius: 5px;
-  background: #252538;
-  color: #c0c0c0;
-  cursor: pointer;
-  font-size: 0.8rem;
-  text-align: left;
+#btn-edit-mode {
+  padding: 8px 9px;
+  border: 1px solid #3a3a50; border-radius: 5px;
+  background: #252538; color: #c0c0c0;
+  cursor: pointer; font-size: 0.8rem; text-align: left;
   transition: background 0.1s, color 0.1s;
 }
-
-#tools button:hover { background: #303048; color: #fff; }
-
-/* ── Keyboard hint footer ──────────────────────────────────────────────── */
-
-#hints {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  font-size: 0.7rem;
-  color: #444;
-  line-height: 1.5;
-}
+#btn-edit-mode:hover { background: #303048; color: #fff; }

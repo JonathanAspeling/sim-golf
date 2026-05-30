@@ -4,53 +4,58 @@
  * Tools:
  *   paint — left drag paints the active tile; right drag erases (Out of Bounds)
  *   fill  — left click flood-fills contiguous same-type tiles
- *   tee   — left click places the tee marker; moving it is just clicking again
+ *   tee   — left click places the tee marker
  *   flag  — left click places the hole/flag marker
  *
- * Camera:
- *   Middle-click drag  → pan
- *   Scroll wheel       → zoom
+ * Camera controls are always active (also in Play mode):
+ *   middle drag           — pan along the ground
+ *   shift + middle drag   — orbit (yaw/pitch)
+ *   wheel                 — dolly zoom
  *
- * History:
- *   Entire paint strokes and flood fills are committed as one undoable step.
- *   Marker placement is not tracked in history (single-click, easily re-placed).
+ * Screen → tile picking is done by ray-casting onto the ground plane through
+ * the camera, so the editor stays correct under any orbit/zoom.
  */
 
 import { TILES } from './tilemap.js';
+import { worldToTile, neighbours } from './grid.js';
 
 export const TOOL = { PAINT: 'paint', FILL: 'fill', TEE: 'tee', FLAG: 'flag' };
 
 export class Editor {
   /**
-   * @param {HTMLCanvasElement}                    canvas
-   * @param {import('./camera.js').Camera}         camera
-   * @param {import('./tilemap.js').TileMap}       tilemap
-   * @param {import('./renderer.js').Renderer}     renderer
-   * @param {import('./history.js').History}       history
-   * @param {import('./hole.js').HoleInfo}         hole
+   * @param {import('./renderer.js').Renderer} renderer
+   * @param {import('./camera.js').Camera}     camera
+   * @param {import('./tilemap.js').TileMap}   tilemap
+   * @param {import('./history.js').History}   history
+   * @param {import('./hole.js').HoleInfo}     hole
    */
-  constructor(canvas, camera, tilemap, renderer, history, hole) {
-    this.canvas   = canvas;
+  constructor(renderer, camera, tilemap, history, hole) {
+    this.renderer = renderer;
     this.camera   = camera;
     this.tilemap  = tilemap;
-    this.renderer = renderer;
     this.history  = history;
     this.hole     = hole;
+    this.canvas   = renderer.three.domElement;
 
-    this.activeTileId = TILES.FAIRWAY.id;
-    this.activeTool   = TOOL.PAINT;
+    this.activeTileId   = TILES.FAIRWAY.id;
+    this.activeTool     = TOOL.PAINT;
+    this.editingEnabled = true;
 
     this._strokeTileId  = null;
-    this._strokeChanges = null; // Map<"col,row", change> | null
-
-    this._panning   = false;
-    this._lastMouse = { x: 0, y: 0 };
+    this._strokeChanges = null;
+    this._panning       = false;
+    this._orbiting      = false;
+    this._lastMouse     = { x: 0, y: 0 };
 
     this._bindEvents();
   }
 
-  setActiveTile(tileId) { this.activeTileId = tileId; }
-  setActiveTool(tool)   { this.activeTool   = tool;   }
+  setActiveTile(id)      { this.activeTileId = id; }
+  setActiveTool(t)       { this.activeTool = t; }
+  setEditingEnabled(on)  {
+    this.editingEnabled = on;
+    if (!on) this.renderer.setHoverTile(null, null);
+  }
 
   // ── Event binding ──────────────────────────────────────────────────────────
 
@@ -67,9 +72,11 @@ export class Editor {
   // ── Coordinate helpers ─────────────────────────────────────────────────────
 
   _screenToTile(sx, sy) {
-    const w  = this.camera.screenToWorld(sx, sy);
-    const ts = this.renderer.tileSize;
-    return { col: Math.floor(w.x / ts), row: Math.floor(w.y / ts) };
+    const w = this.camera.screenToGround(
+      sx, sy, this.renderer.viewportWidth, this.renderer.viewportHeight,
+    );
+    if (!w) return { col: null, row: null };
+    return worldToTile(w.x, w.z);
   }
 
   // ── Paint stroke ───────────────────────────────────────────────────────────
@@ -82,7 +89,7 @@ export class Editor {
 
   _applyStroke(sx, sy) {
     const { col, row } = this._screenToTile(sx, sy);
-    if (!this.tilemap.isInBounds(col, row)) return;
+    if (col === null || !this.tilemap.isInBounds(col, row)) return;
 
     const key    = `${col},${row}`;
     const before = this.tilemap.get(col, row);
@@ -95,12 +102,12 @@ export class Editor {
     }
 
     this.tilemap.set(col, row, after);
+    this.renderer.updateTile(col, row);
   }
 
   _commitStroke() {
     if (!this._strokeChanges) return;
-    const changes = [...this._strokeChanges.values()]
-      .filter(c => c.before !== c.after);
+    const changes = [...this._strokeChanges.values()].filter(c => c.before !== c.after);
     this.history.push(changes);
     this._strokeChanges = null;
     this._strokeTileId  = null;
@@ -126,39 +133,52 @@ export class Editor {
       seen[idx] = 1;
       changes.push({ col: c, row: r, before: targetId, after: newTileId });
       this.tilemap.set(c, r, newTileId);
-      stack.push([c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]);
+      for (const nb of neighbours(c, r)) stack.push(nb);
     }
 
-    if (changes.length > 0) this.history.push(changes);
+    if (changes.length > 0) {
+      this.history.push(changes);
+      this.renderer.refreshAllTiles();
+    }
   }
 
   // ── Marker placement ───────────────────────────────────────────────────────
 
   _placeMarker(sx, sy) {
     const { col, row } = this._screenToTile(sx, sy);
-    if (!this.tilemap.isInBounds(col, row)) return;
+    if (col === null || !this.tilemap.isInBounds(col, row)) return;
     if (this.activeTool === TOOL.TEE)  this.hole.teePos  = { col, row };
     if (this.activeTool === TOOL.FLAG) this.hole.holePos = { col, row };
+    this.renderer.updateMarkers();
   }
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Mouse handlers ─────────────────────────────────────────────────────────
 
   _onMouseDown(e) {
     this._lastMouse = { x: e.offsetX, y: e.offsetY };
 
-    if (e.button === 0) {
-      if (this.activeTool === TOOL.TEE || this.activeTool === TOOL.FLAG) {
+    if (e.button === 0 && this.editingEnabled) {
+      if (e.shiftKey) {
+        // Shift + left-drag = erase (paint Out-of-Bounds).
+        this._beginStroke(e.offsetX, e.offsetY, TILES.OUT_OF_BOUNDS.id);
+      } else if (this.activeTool === TOOL.TEE || this.activeTool === TOOL.FLAG) {
         this._placeMarker(e.offsetX, e.offsetY);
       } else if (this.activeTool === TOOL.FILL) {
         const { col, row } = this._screenToTile(e.offsetX, e.offsetY);
-        this._floodFill(col, row, this.activeTileId);
+        if (col !== null && this.tilemap.isInBounds(col, row)) {
+          this._floodFill(col, row, this.activeTileId);
+        }
       } else {
         this._beginStroke(e.offsetX, e.offsetY, this.activeTileId);
       }
     } else if (e.button === 2) {
-      // Right-click always erases, regardless of active tool.
-      this._beginStroke(e.offsetX, e.offsetY, TILES.OUT_OF_BOUNDS.id);
+      // Right-drag orbits the camera (always available, both modes).
+      e.preventDefault();
+      this._orbiting = true;
+      this.canvas.style.cursor = 'grabbing';
     } else if (e.button === 1) {
+      // Middle-drag pans (always available).
+      e.preventDefault();
       this._panning = true;
       this.canvas.style.cursor = 'grabbing';
     }
@@ -170,15 +190,28 @@ export class Editor {
     this._lastMouse = { x: e.offsetX, y: e.offsetY };
 
     if (this._panning) {
-      this.camera.pan(dx, dy);
+      this.camera.pan(dx, dy, this.renderer.viewportWidth, this.renderer.viewportHeight);
+    } else if (this._orbiting) {
+      this.camera.orbit(dx, dy);
     } else if (this._strokeChanges) {
       this._applyStroke(e.offsetX, e.offsetY);
     }
+
+    this._updateHover(e.offsetX, e.offsetY);
+  }
+
+  _updateHover(sx, sy) {
+    if (!this.editingEnabled) { this.renderer.setHoverTile(null, null); return; }
+    const { col, row } = this._screenToTile(sx, sy);
+    this.renderer.setHoverTile(col, row);
   }
 
   _onMouseUp(e) {
-    if (e.button === 0 || e.button === 2) {
+    if (e.button === 0) {
       this._commitStroke();
+    } else if (e.button === 2) {
+      this._orbiting = false;
+      this.canvas.style.cursor = 'crosshair';
     } else if (e.button === 1) {
       this._panning = false;
       this.canvas.style.cursor = 'crosshair';
@@ -187,13 +220,18 @@ export class Editor {
 
   _onMouseLeave() {
     this._commitStroke();
-    this._panning = false;
+    this._panning  = false;
+    this._orbiting = false;
     this.canvas.style.cursor = 'crosshair';
+    this.renderer.setHoverTile(null, null);
   }
 
   _onWheel(e) {
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    this.camera.zoomAt(factor, e.offsetX, e.offsetY);
+    this.camera.zoom(
+      factor, e.offsetX, e.offsetY,
+      this.renderer.viewportWidth, this.renderer.viewportHeight,
+    );
   }
 }
